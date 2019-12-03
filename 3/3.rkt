@@ -1,7 +1,8 @@
 #lang racket
 
 (require 2htdp/batch-io
-         rackunit)
+         rackunit
+         racket/set)
 
 ;; A Direction is one of:
 ;; U
@@ -72,11 +73,8 @@
 
 
 (define WIRE-1-AS-POSN (input->lop-input-hits WIRE-1))
-(displayln "done 1")
 (define WIRE-2-AS-POSN (input->lop-input-hits WIRE-2))
-(displayln "done 2")
-(define INTERSECTIONS (filter (λ (pos) (member pos WIRE-2-AS-POSN)) WIRE-1-AS-POSN))
-(displayln "done 3")
+(define INTERSECTIONS (list (set-intersect (set WIRE-1-AS-POSN) (set WIRE-2-AS-POSN))))
 
 
 (argmin (λ (dis) (manhattan-distance dis (make-posn 0 0))) INTERSECTIONS)
