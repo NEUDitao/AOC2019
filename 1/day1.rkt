@@ -1,9 +1,24 @@
 #lang racket
 
-(require rackunit
-         rackunit/text-ui)
+(require rackunit)
 
 (define INPUT1 (open-input-file "input1.txt"))
+
+
+
+;; input->mass/module-sum: InputPort -> Number
+;; reads every line from the input port, and sums up their mass->module
+
+#;(module+ test
+  (test-case "input->mass/module-sum"
+             (check-equal? (input->mass/module-sum INPUT1) 3367126)))
+
+(define (input->mass/module-sum ip)
+  (define MASS-ON-LINE (read ip))
+  (cond
+    [(eof-object? MASS-ON-LINE) 0]
+    [else (+ (mass->module MASS-ON-LINE) (input->mass/module-sum ip))]))
+
 
 
 ;; mass->module: Number -> Number
@@ -19,28 +34,9 @@
   (- (floor (/ mass 3)) 2))
 
 
-
-;; input->mass/module-sum: InputPort -> Number
-;; reads every line from the input port, and sums up their mass->module
-
-(module+ test
-  (test-case "input->mass/module-sum"
-             (check-equal? (input->mass/module-sum INPUT1) 3367126)))
-
-(define (input->mass/module-sum ip)
-  (define MASS-ON-LINE (read ip))
-  (cond
-    [(eof-object? MASS-ON-LINE) 0]
-    [else (+ (mass->module MASS-ON-LINE) (input->mass/module-sum ip))]))
-
-
-
 ;; input->mass/module-sum-with-fuel: InputPort -> Number
 ;; reads every line from the input port, and sums up mass->module, accounting for the fuel required
 ;; for fuel
-
-(module+ test
-  (test-case "input->mass/module-sum"))
 
 (define (input->mass/module-sum-with-fuel ip)
   (define MASS-ON-LINE (read ip))
@@ -60,5 +56,5 @@
 (define (mass->module/acc mass)
   (define FUEL-FROM-MASS (mass->module mass))
   (cond
-    [(zero? FUEL-FROM-MASS) 0]
+    [(< FUEL-FROM-MASS 0) 0]
     [else (+ FUEL-FROM-MASS (mass->module/acc FUEL-FROM-MASS))]))
