@@ -56,5 +56,5 @@
 (define (mass->module/acc mass)
   (define FUEL-FROM-MASS (mass->module mass))
   (cond
-    [(< FUEL-FROM-MASS 0) 0]
+    [(<= FUEL-FROM-MASS 0) 0]
     [else (+ FUEL-FROM-MASS (mass->module/acc FUEL-FROM-MASS))]))
