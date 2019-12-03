@@ -52,7 +52,9 @@
   (execute-intcode/idx lon 0))
 
 
-
+;; Number Number -> Void
+;; Finds the values that, when they replace the first and second values of the input to
+;; intcode-computer produce 19690720
 (define (find-inputs-that-give-19690720 x y)
   (cond
     [(and (> x 99) (> y 99)) (error "could not find valid inputs")]
