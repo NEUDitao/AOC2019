@@ -74,14 +74,18 @@
       [(string=? dir "L") (posn (sub1 (posn-x prev-posn)) (posn-y prev-posn))]
       [(string=? dir "R") (posn (add1 (posn-x prev-posn)) (posn-y prev-posn))]))
 
-  (foldr
-   (λ (rp lop) (append lop (create-singular-direction-lop rp (first lop))))
+  (foldl
+   (λ (rp lop) (append lop (create-singular-direction-lop rp (last lop))))
    (list (posn 0 0)) lorp))
 
 
 (define WIRE-1-AS-POSN (lorp->lop WIRE-1))
 (define WIRE-2-AS-POSN (lorp->lop WIRE-2))
-(define INTERSECTIONS (remove (posn 0 0) (set->list (set-intersect (list->set WIRE-1-AS-POSN) (list->set WIRE-2-AS-POSN)))))
+(define INTERSECTIONS (remove (posn 0 0)
+                              (set->list (set-intersect (list->set WIRE-1-AS-POSN)
+                                                        (list->set WIRE-2-AS-POSN)))))
 
+(manhattan-distance (argmin (λ (dis) (manhattan-distance dis (posn 0 0))) INTERSECTIONS) (posn 0 0))
 
-(argmin (λ (dis) (manhattan-distance dis (posn 0 0))) INTERSECTIONS)
+(argmin min (map (lambda (x) (+ (index-of WIRE-1-AS-POSN x) (index-of WIRE-2-AS-POSN x)))
+                 INTERSECTIONS))
