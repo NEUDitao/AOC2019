@@ -4,18 +4,26 @@
 
 
 ;; An OpCode is one of:
-;; 1
-;; 2
-;; 99
+;; 1 (adds the first 2 numbers and sets the index in the third number to that value)
+;; 2 (does the same as 1 but multiplies it)
+;; 3 (takes a single integer as input and saves it to address given by parameter)
+;; 4 (outputs value of its only parameter at parameter)
+;; 99 (ends the program)
 ;; And represents an instruction used for an IntCode
 
 (define OP-CODE-ADD 1)
 (define OP-CODE-MULTIPLY 2)
+(define OP-CODE-INPUT 3)
+(define OP-CODE-OUTPUT 4)
 (define OP-CODE-TERMINATE 99)
 
 
+(struct op-code-param-val (param code))
+;; An OpCodeParamVal is a (op-code-param-val [List-of Param] OpCode)
+
+
 ;; An IntCode is a (list OpCode Number ...)
-;; Where the first number is an OpCode
+;; Where the first number is an OpCoed
 ;; And the other three numbers dictate what the OpCode receives
 ;; and represents an instruction and parameters passed to it
 
@@ -23,27 +31,77 @@
 (define INT-CODE-2 '(2 0 0 3))
 (define INT-CODE-3 '(99 3 4 12))
 
+;; A ParameterMode is one of:
+;; 0 (positional mode)
+;; 1 (value mode)
+;; and represent how parameteres are handled in the IntCode computer
+
+(define POSITIONAL 0)
+(define VALUE 1)
+
+
+(struct parameter-value (mode value))
+;; A ParameterValue is a (parameter-value ParameterMode Number)
+;; and represents the prametermode of an opcode and the value at the parameter it correspodns to
+
+(define PV1 (parameter-value 1 33))
+(define PV2 (parameter-value 0 14))
+
+
+(struct parameter-value-triplet (value-x value-y stored-at))
+;; a ParameterValueTriplet is a (parameter-value-triplet ParameterValue ParameterValue ParameterValue)
+;; and represents the values that will be acted on the ParameterValue in stored-at
+
 ;; intcode-computer: [List-of Number] -> Number
 ;; Executes IntCodes seen, producing the number at index 0
 
 (define (intcode-computer lon)
 
-  ;; update-value-in-lon: IntCode [List-of Number] [Number Number -> Number] -> Number
-  (define (update-value-in-lon ic lon combiner)
-    (list-set lon (fourth ic)
-              (combiner (list-ref lon (second ic))
-                        (list-ref lon (third ic)))))
+  ;; update-value-in-lon: ParameterValueTriplet [List-of Number] [Number Number -> Number] -> Number
+  (define (update-value-in-lon pvt og-lon combiner)
+    (list-set og-lon (parameter-value-triplet-stored-at pvt)
+              (combiner (get-value-of-pv (parameter-value-triplet-value-x pvt) og-lon))
+                        (get-value-of-pv (parameter-value-triplet-value-y pvt) og-lon)))
+
+  ;; get-value-of-pv: ParameterValue -> Number
+  (define (get-value-of-pv pv og-lon)
+    (cond
+      [(= (parameter-value-mode pv) POSITIONAL) (list-ref og-lon (parameter-value-value pv))]
+      [(= (parameter-value-mode pv) VALUE) (parameter-value-value pv)]))
+
+
+  ;; create-pvt: IntCode -> ParameterValueTriplet
+  (define (create-pvt ic)
+    (define OP-CODE (first ic))
+    (parameter-value-triplet (parameter-value (modulo (floor (/ OP-CODE 100)) 10) (second ic))
+                              (parameter-value (modulo (floor (/ OP-CODE 100)) 10) (third ic))
+                              (parameter-value (modulo (floor (/ OP-CODE 100)) 10) (fourth ic)))
+    )
+      
 
   ;; singular-intcode: IntCode [List-of Number] Number -> Number
-  (define (singular-intcode ic lon idx)
+  (define (singular-intcode ic og-lon idx)
+    (define OP-CODE-OPERATION (modulo (first ic) 100))
     (cond
-      [(= (first ic) 1) (execute-intcode/idx (update-value-in-lon ic lon +) (add1 idx))]
-      [(= (first ic) 2) (execute-intcode/idx (update-value-in-lon ic lon *) (add1 idx))]
-      [(= (first ic) 99) (first lon)]))
+      [(= OP-CODE-OPERATION OP-CODE-ADD) (execute-intcode/idx (update-value-in-lon (create-pvt ic) og-lon +) (+ 4 idx))]
+      [(= OP-CODE-OPERATION OP-CODE-MULTIPLY) (execute-intcode/idx (update-value-in-lon (create-pvt ic) og-lon *) (+ 4 idx))]
+      [(= OP-CODE-OPERATION OP-CODE-INPUT) (execute-intcode/idx (intcode-input ic og-lon) (+ 2 idx))]
+      [(= OP-CODE-OPERATION OP-CODE-OUTPUT) (execute-intcode/idx (intcode-output ic og-lon) (+ 2 idx))]
+      [(= OP-CODE-OPERATION OP-CODE-TERMINATE) (first og-lon)]))
+
+
+  ;; intcode-input: IntCode [List-of Number] -> [List-of Number]
+  (define (intcode-input ic lon)
+    (list-set lon (second ic) (read-line (current-input-port) 'any)))
+
+  ;; intcode-output: IntCode [List-of Number] -> [List-of Number]
+  (define (intcode-output ic lon)
+    (displayln (list-ref lon (second ic)))
+    lon)
 
   ;; execute-intcode/idx [List-of Number] Number -> Number
-  (define (execute-intcode/idx lon idx)
-    (singular-intcode (list-tail lon (* idx 4)) lon idx))
+  (define (execute-intcode/idx og-lon idx)
+    (singular-intcode (list-tail og-lon idx) og-lon idx))
   
   (execute-intcode/idx lon 0))
 
