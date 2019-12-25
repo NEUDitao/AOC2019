@@ -7,6 +7,17 @@
 
 (define INPUT (map (lambda (x) (string-split x ")")) (file->lines "input.txt")))
 (define START-POINT "COM")
+(define TEST-LIST '("COM)B"
+                    "B)C"
+                    "C)D"
+                    "D)E"
+                    "E)F"
+                    "B)G"
+                    "G)H"
+                    "D)I"
+                    "E)J"
+                    "J)K"
+                    "K)L"))
 
 
 ;; create-tree: String [List-of [List-of String String]] -> TreeNode
@@ -36,27 +47,61 @@
 (define TREE (create-tree START-POINT INPUT))
 
 
-(define (count-orbits tree)
-  (+ 
-     (foldr (lambda (x y) (+ 1 (count-orbits x) y)) 0 (treenode-children tree))))
-
-
 (module+ test
   (require rackunit)
-  (define test-file (map (lambda (x) (string-split x ")")) '(
-"COM)B"
-"B)C"
-"C)D"
-"D)E"
-"E)F"
-"B)G"
-"G)H"
-"D)I"
-"E)J"
-"J)K"
-"K)L")))
-  (check-equal? (count-orbits (create-tree START-POINT test-file)) 42))
+  (define test-file (map (lambda (x) (string-split x ")")) TEST-LIST))
+  (define TEST-TREE (create-tree START-POINT test-file))
+  (check-equal? (count-orbits TEST-TREE 1) 42))
+
+;; count-orbits: TreeNode Number -> Number
+(define (count-orbits tree depth)
+  (foldr (lambda (x y) (+ depth (count-orbits x (add1 depth)) y)) 0 (treenode-children tree)))
+
+(module+ test
+  (check-equal? (not (false? (child? "B" TEST-TREE))) #t))
+
+;; child?: String TreeNode -> Boolean
+(define (child? node tree)
+  (define compare-nodes (lambda (x y) (string=? (treenode-data y) node)))
+  (cond
+    [(empty? (treenode-children tree)) #false]
+    [else (or (member node (treenode-children tree) compare-nodes)
+              (ormap (lambda (x) (child? node x)) (treenode-children tree)))]))
+
+(define GOAL1 "YOU")
+(define GOAL2 "SAN")
+
+(define (deepest-tree-with-both goal1 goal2 tree)
+
+  ;; deepest-tree-with-both/a: TreeNode TreeNode -> TreeNode
+  (define (deepest-tree-with-both/a prev-tree curr-tree)
+    (cond
+      [(not (and (child? goal1 curr-tree) (child? goal2 curr-tree))) prev-tree]
+      [else (iter-through-children (treenode-children curr-tree) curr-tree +inf.0 #f)]))
+
+  ;; iter-through-children: [List-of TreeNode] TreeNode Number TreeNode  -> TreeNode
+  ;; NOTE: could probably do with argmin
+  (define (iter-through-children children prev-tree size-of-smallest tn)
+    (cond
+      [(empty? children) tn]
+      [else (define NEW-VAL (deepest-tree-with-both/a prev-tree (first children)))
+            (define NEW-VAL-ORBITS (count-orbits NEW-VAL 1))
+            (if (< NEW-VAL-ORBITS size-of-smallest)
+                (iter-through-children (rest children) prev-tree NEW-VAL-ORBITS NEW-VAL)
+                (iter-through-children (rest children) prev-tree size-of-smallest tn))]))
+
+  (deepest-tree-with-both/a tree tree))
 
 
-  
-        
+
+
+(define (find-depth-in-tree node tree)
+
+  (define (find-depth-in-tree/a tree depth)
+    (cond
+      [(string=? (treenode-data tree) node) (sub1 depth)]
+      [(empty? (treenode-children tree)) 0]
+      [else (apply max (map (lambda (x) (find-depth-in-tree/a x (add1 depth))) (treenode-children tree)))]))
+
+  (find-depth-in-tree/a tree 0))
+
