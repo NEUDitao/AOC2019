@@ -9,4 +9,4 @@
 (define INPUT (map string->number (first (read-csv-file "input.txt"))))
 
 
-(intcode-computer INPUT)
+(intcode-computer INPUT '(1))

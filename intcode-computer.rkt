@@ -58,10 +58,10 @@
 ;; a ParameterValueTriplet is a (parameter-value-triplet ParameterValue ParameterValue Number)
 ;; and represents the values that will be acted on the ParameterValue in stored-at
 
-;; intcode-computer: [List-of Number] -> Number
-;; Executes IntCodes seen, producing the number at index 0
+;; intcode-computer: [List-of Number] [List-of Number] -> Number
+;; Executes IntCodes seen, producing the number at index 0, using the inputs given
 
-(define (intcode-computer lon)
+(define (intcode-computer lon inputs)
 
   ;; update-value-in-lon: ParameterValueTriplet [List-of Number] [Number Number -> Number] -> Number
   ;; Updates the value in the original-list based on the pvt
@@ -118,14 +118,11 @@
     (define OPERATION (modulo (first ic) 100))
     (define INCREMENT-THREE-PARAM (+ 4 idx))
     (define INCREMENT-ONE-PARAM (+ 2 idx))
-    #;(printf "op ~a\n" OPERATION)
-    #;(printf "whole first ~a\n" (first ic))
-    #;(printf "idx ~a\n" idx)
     (cond
       [(= OPERATION OP-CODE-ADD) (execute-intcode/idx (update-value-in-lon (create-pvt ic) og-lon +) INCREMENT-THREE-PARAM)]
       [(= OPERATION OP-CODE-MULTIPLY) (execute-intcode/idx (update-value-in-lon (create-pvt ic) og-lon *) INCREMENT-THREE-PARAM)]
       [(= OPERATION OP-CODE-INPUT) (execute-intcode/idx (intcode-input ic og-lon) INCREMENT-ONE-PARAM)]
-      [(= OPERATION OP-CODE-OUTPUT) (execute-intcode/idx (intcode-output ic og-lon) INCREMENT-ONE-PARAM)]
+      [(= OPERATION OP-CODE-OUTPUT) (intcode-output ic og-lon idx)]
       [(= OPERATION OP-CODE-JUMP-IF-TRUE) (jump-if-true ic og-lon idx)] 
       [(= OPERATION OP-CODE-JUMP-IF-FALSE) (jump-if-false ic og-lon idx)]
       [(= OPERATION OP-CODE-LESS-THAN) (execute-intcode/idx (update-value-off-question (create-pvt ic) og-lon <) INCREMENT-THREE-PARAM)]
@@ -135,16 +132,17 @@
 
   ;; intcode-input: IntCode [List-of Number] -> [List-of Number]
   (define (intcode-input ic lon)
-    (list-set lon (second ic) (string->number (read-line (current-input-port) 'any))))
+    (define FIRST (first inputs))
+    (define REST (set! inputs (rest inputs)))
+    (list-set lon (second ic) FIRST))
 
   ;; intcode-output: IntCode [List-of Number] -> [List-of Number]
-  (define (intcode-output ic lon)
-    (displayln (list-ref lon (second ic)))
-    lon)
+  (define (intcode-output ic lon idx)
+    (cons (list-ref lon (second ic))
+    (execute-intcode/idx lon (+ 2 idx))))
 
   ;; execute-intcode/idx [List-of Number] Number -> Number
   (define (execute-intcode/idx og-lon idx)
-    #;(displayln "here")
     (singular-intcode (list-tail og-lon idx) og-lon idx))
   
   (execute-intcode/idx lon 0))
