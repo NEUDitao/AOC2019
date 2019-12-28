@@ -1,6 +1,8 @@
 #lang racket
 
-(provide intcode-computer)
+(provide intcode-computer
+         intcode-computer-with-index
+         (struct-out output-pair))
 
 
 ;; An OpCode is one of:
@@ -58,10 +60,15 @@
 ;; a ParameterValueTriplet is a (parameter-value-triplet ParameterValue ParameterValue Number)
 ;; and represents the values that will be acted on the ParameterValue in stored-at
 
+(struct output-pair (output fields) #:transparent)
+;; An Output Pair is a (output-pair Number [List [List-of Number] [List-of Number] Number])
+;; and represents the output from an out put instruction, and the fields that can be sent back
+;; to the intcode computer
+
 ;; intcode-computer: [List-of Number] [List-of Number] -> Number
 ;; Executes IntCodes seen, producing the number at index 0, using the inputs given
 
-(define (intcode-computer lon inputs)
+(define (intcode-computer-with-index lon inputs index)
 
   ;; update-value-in-lon: ParameterValueTriplet [List-of Number] [Number Number -> Number] -> Number
   ;; Updates the value in the original-list based on the pvt
@@ -108,7 +115,7 @@
   ;; jump-if-false: IntCode [List-of Number] Number -> Number
   (define (jump-if-false ic lon idx)
     #;(printf "nex idx ~a~a\nzero?~a\n" (+ idx 2) (create-pv ic (+ idx 2)) (zero? (get-value-of-pv (create-pv ic 1) lon)))
-      (if (zero? (get-value-of-pv (create-pv ic 1) lon))
+    (if (zero? (get-value-of-pv (create-pv ic 1) lon))
         (execute-intcode/idx lon (get-value-of-pv (create-pv ic 2) lon))
         (execute-intcode/idx lon (+ 3 idx))))
       
@@ -138,12 +145,16 @@
 
   ;; intcode-output: IntCode [List-of Number] -> [List-of Number]
   (define (intcode-output ic lon idx)
-    (cons (list-ref lon (second ic))
-    (execute-intcode/idx lon (+ 2 idx))))
+    (output-pair (list-ref lon (second ic))
+          `(,lon ,inputs ,(+ 2 idx))))
 
   ;; execute-intcode/idx [List-of Number] Number -> Number
   (define (execute-intcode/idx og-lon idx)
     (singular-intcode (list-tail og-lon idx) og-lon idx))
   
-  (execute-intcode/idx lon 0))
+  (execute-intcode/idx lon index))
 
+
+;; intcode-computer: [List-of Number] [List-of Number] -> [Pair Number]
+(define (intcode-computer lon inputs)
+  (intcode-computer-with-index lon inputs 0))

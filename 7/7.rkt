@@ -31,17 +31,20 @@
                                                101,5,23,23,1,24,23,23,4,23,99,0,0))
               54321)))
 
-;; 
+
 (define (perform-singular-permutation perm ip)
   ;; (displayln perm)
   (cond
     [(empty? (rest perm)) (first perm)]
     [else
      (define INPUTS (list (second perm) (first perm)))
-     (perform-singular-permutation (cons (car (intcode-computer ip INPUTS))
+     (perform-singular-permutation (cons (output-pair-output (intcode-computer ip INPUTS))
                                               (rest (rest perm))) ip)]))
 
 
 (displayln (perform-singular-permutation
             (argmax (lambda (x) (perform-singular-permutation x INPUT)) ALL-COMBINATIONS)
             INPUT))
+
+
+

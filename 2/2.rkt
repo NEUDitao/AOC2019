@@ -14,10 +14,14 @@
 ;; Finds the values that, when they replace the first and second values of the input to
 ;; intcode-computer produce 19690720
 (define (find-inputs-that-give-19690720 x y)
+  (define input-list (list-set (list-set (map string->number INPUT) 1 x) 2 y))
   (cond
     [(and (> x 99) (> y 99)) (error "could not find valid inputs")]
     [(> x 99) (find-inputs-that-give-19690720 0 (add1 y))]
-    [else (if (= 19690720 (intcode-computer (list-set (list-set (map string->number INPUT) 1 x) 2 y)))
+    [else (if (= 19690720 (intcode-computer input-list '()))
               (fprintf (current-output-port) "~a, ~a" x y)
               (find-inputs-that-give-19690720 (add1 x) y))]))
-              
+
+
+(displayln (intcode-computer INPUT-FOR-PART-1 '()))
+(find-inputs-that-give-19690720 0 0)
