@@ -17,17 +17,6 @@
 
   (all-digits-increasing?/a n 9 6))
 
-;; contains-double?: Number -> Boolean
-(define (contains-double? n)
-  (check-duplicates (string->list (number->string n))))
-
-;  (define (contains-double?/a num last)
-;    (cond
-;      [(= num 0) #f]
-;      [else (or (= last (modulo num 10))
-;                (contains-double?/a (floor (/ num 10)) (modulo num 10)))]))
-;
-;  (contains-double?/a n -1))
 
 
 ;; find-digits-that-satisfy-mass-double: Number Number -> [List-of Number]
