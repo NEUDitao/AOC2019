@@ -123,8 +123,6 @@
   ;; singular-intcode: IntCode [List-of Number] Number -> Number
   (define (singular-intcode ic og-lon idx)
     (define OPERATION (modulo (first ic) 100))
-    (display OPERATION)
-    (displayln idx)
     (define INCREMENT-THREE-PARAM (+ 4 idx))
     (define INCREMENT-ONE-PARAM (+ 2 idx))
     (cond
