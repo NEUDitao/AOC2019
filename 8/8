@@ -1,0 +1,59 @@
+#lang racket
+
+(require 2htdp/image)
+
+
+;; A Pixel is one of:
+;; 0 - Black
+;; 1 - White
+;; 2 - Transparent
+
+(define INPUT (filter-map string->number (string-split (read-line (open-input-file "input.txt")) "")))
+(define IMAGE-WIDTH 25)
+(define IMAGE-HEIGHT 6)
+
+;; split-up-list: [List-of Any] Number -> [List-of Any]
+;; takes a list and splits it up into sublists of given size
+(define (split-up-list ll size)
+  (cond
+    [(empty? ll) '()]
+    [else (cons (take ll size) (split-up-list (drop ll size) size))]))
+
+(define ALL-LAYERS (split-up-list INPUT (* IMAGE-WIDTH IMAGE-HEIGHT)))
+
+(define LEAST-ZEROES (argmin (lambda (x) (count zero? x)) ALL-LAYERS))
+(displayln (* (count (lambda (x) (= x 1)) LEAST-ZEROES) (count (lambda (x) (= x 2)) LEAST-ZEROES)))
+
+;; render-pixel: Pixel -> Image
+(define (render-pixel pixel)
+  (cond
+    [(= pixel 0) (square 50 'solid 'black)]
+    [(= pixel 1) (square 50 'solid 'white)]
+    [(= pixel 2) (square 50 'solid 'transparent)]))
+
+
+
+(define (turn-layers-into-image-pixel-map layers)
+  (cond
+    [(empty? (first layers)) '()]
+    [else
+     (define curr-layer (map first layers))
+     (define first-non-zero (first (filter (lambda (x) (not (= x 2))) curr-layer)))
+     (cons first-non-zero (turn-layers-into-image-pixel-map (map rest layers)))]))
+
+
+
+
+(define (render-image-map image-map width)
+  (cond
+    [(empty? image-map) empty-image]
+    [else (above (render-single-row (take image-map width))
+               (render-image-map (drop image-map width) width))]))
+
+
+(define (render-single-row image-map)
+  (cond
+    [(empty? image-map) empty-image]
+    [else (beside (render-pixel (first image-map)) (render-single-row (rest image-map)))]))
+
+(render-image-map (turn-layers-into-image-pixel-map ALL-LAYERS) IMAGE-WIDTH)
