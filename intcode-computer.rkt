@@ -10,6 +10,10 @@
 ;; 2 (does the same as 1 but multiplies it)
 ;; 3 (takes a single integer as input and saves it to address given by parameter)
 ;; 4 (outputs value of its only parameter at parameter)
+;; 5 (jumps to parameter if true)
+;; 6 (jumps to parameter if false)
+;; 7 (less than produces 1, else 0)
+;; 8 (equal produces 1, else 0)
 ;; 99 (ends the program)
 ;; And represents an instruction used for an IntCode
 
@@ -20,7 +24,8 @@
 (define OP-CODE-JUMP-IF-TRUE 5)
 (define OP-CODE-JUMP-IF-FALSE 6)
 (define OP-CODE-LESS-THAN 7)
-(define OP-CODE-GREATER-THAN 8)
+(define OP-CODE-EQUAL-TO 8)
+(define OP-CODE-RELATIVE-BASE 9)
 (define OP-CODE-TERMINATE 99)
 
 
@@ -46,6 +51,7 @@
 
 (define POSITIONAL 0)
 (define VALUE 1)
+(define RELATIVE 2)
 
 
 (struct parameter-value (mode value) #:transparent)
@@ -70,6 +76,8 @@
 
 (define (intcode-computer-with-index lon inputs index)
 
+  (define relative-base 0)
+
   ;; update-value-in-lon: ParameterValueTriplet [List-of Number] [Number Number -> Number] -> Number
   ;; Updates the value in the original-list based on the pvt
   (define (update-value-in-lon pvt og-lon combiner)
@@ -89,7 +97,8 @@
   (define (get-value-of-pv pv og-lon)
     (cond
       [(= (parameter-value-mode pv) POSITIONAL) (list-ref og-lon (parameter-value-value pv))]
-      [(= (parameter-value-mode pv) VALUE) (parameter-value-value pv)]))
+      [(= (parameter-value-mode pv) VALUE) (parameter-value-value pv)]
+      [(= (parameter-value-mode pv) RELATIVE) (displayln relative-base) (list-ref og-lon (+ (parameter-value-value pv) relative-base))]))
 
 
   ;; create-pvt: IntCode -> ParameterValueTriplet
@@ -114,7 +123,6 @@
 
   ;; jump-if-false: IntCode [List-of Number] Number -> Number
   (define (jump-if-false ic lon idx)
-    #;(printf "nex idx ~a~a\nzero?~a\n" (+ idx 2) (create-pv ic (+ idx 2)) (zero? (get-value-of-pv (create-pv ic 1) lon)))
     (if (zero? (get-value-of-pv (create-pv ic 1) lon))
         (execute-intcode/idx lon (get-value-of-pv (create-pv ic 2) lon))
         (execute-intcode/idx lon (+ 3 idx))))
@@ -122,18 +130,29 @@
 
   ;; singular-intcode: IntCode [List-of Number] Number -> Number
   (define (singular-intcode ic og-lon idx)
+    (displayln idx)
     (define OPERATION (modulo (first ic) 100))
     (define INCREMENT-THREE-PARAM (+ 4 idx))
     (define INCREMENT-ONE-PARAM (+ 2 idx))
     (cond
-      [(= OPERATION OP-CODE-ADD) (execute-intcode/idx (update-value-in-lon (create-pvt ic) og-lon +) INCREMENT-THREE-PARAM)]
-      [(= OPERATION OP-CODE-MULTIPLY) (execute-intcode/idx (update-value-in-lon (create-pvt ic) og-lon *) INCREMENT-THREE-PARAM)]
-      [(= OPERATION OP-CODE-INPUT) (execute-intcode/idx (intcode-input ic og-lon) INCREMENT-ONE-PARAM)]
+      [(= OPERATION OP-CODE-ADD) (execute-intcode/idx (update-value-in-lon (create-pvt ic) og-lon +)
+                                                      INCREMENT-THREE-PARAM)]
+      [(= OPERATION OP-CODE-MULTIPLY) (execute-intcode/idx (update-value-in-lon (create-pvt ic) og-lon *)
+                                                           INCREMENT-THREE-PARAM)]
+      [(= OPERATION OP-CODE-INPUT) (execute-intcode/idx (intcode-input ic og-lon)
+                                                        INCREMENT-ONE-PARAM)]
       [(= OPERATION OP-CODE-OUTPUT) (intcode-output ic og-lon idx)]
       [(= OPERATION OP-CODE-JUMP-IF-TRUE) (jump-if-true ic og-lon idx)] 
       [(= OPERATION OP-CODE-JUMP-IF-FALSE) (jump-if-false ic og-lon idx)]
-      [(= OPERATION OP-CODE-LESS-THAN) (execute-intcode/idx (update-value-off-question (create-pvt ic) og-lon <) INCREMENT-THREE-PARAM)]
-      [(= OPERATION OP-CODE-GREATER-THAN) (execute-intcode/idx (update-value-off-question (create-pvt ic) og-lon =) INCREMENT-THREE-PARAM)]
+      [(= OPERATION OP-CODE-LESS-THAN) (execute-intcode/idx
+                                        (update-value-off-question (create-pvt ic) og-lon <)
+                                        INCREMENT-THREE-PARAM)]
+      [(= OPERATION OP-CODE-EQUAL-TO) (execute-intcode/idx
+                                           (update-value-off-question (create-pvt ic) og-lon =)
+                                           INCREMENT-THREE-PARAM)]
+      [(= OPERATION OP-CODE-RELATIVE-BASE)
+       (set! relative-base (+ relative-base (get-value-of-pv (create-pv ic 1) lon)))
+       (execute-intcode/idx og-lon INCREMENT-ONE-PARAM)]
       [(= OPERATION OP-CODE-TERMINATE) (first og-lon)]))
 
 
@@ -146,7 +165,7 @@
   ;; intcode-output: IntCode [List-of Number] -> [List-of Number]
   (define (intcode-output ic lon idx)
     (output-pair (list-ref lon (second ic))
-          `(,lon ,inputs ,(+ 2 idx))))
+                 `(,lon ,inputs ,(+ 2 idx))))
 
   ;; execute-intcode/idx [List-of Number] Number -> Number
   (define (execute-intcode/idx og-lon idx)
