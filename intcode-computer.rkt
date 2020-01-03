@@ -87,9 +87,10 @@
 
   ;; update-value-off-question ParameterValueTriplet [List-of Number] [Number Number -> Boolean] -> Number
   (define (update-value-off-question pvt og-lon question)
-    (define UPDATED-VALUE (if (question (get-value-of-pv (parameter-value-triplet-param-1 pvt) og-lon)
-                                        (get-value-of-pv (parameter-value-triplet-param-2 pvt) og-lon))
-                              1 0))
+    (define UPDATED-VALUE
+      (if (question (get-value-of-pv (parameter-value-triplet-param-1 pvt) og-lon)
+                    (get-value-of-pv (parameter-value-triplet-param-2 pvt) og-lon))
+          1 0))
     (list-set og-lon (parameter-value-triplet-stored-at pvt) UPDATED-VALUE))
 
   ;; get-value-of-pv: ParameterValue -> Number

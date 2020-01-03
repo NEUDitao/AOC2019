@@ -33,7 +33,6 @@
 
 
 (define (perform-singular-permutation perm ip)
-  ;; (displayln perm)
   (cond
     [(empty? (rest perm)) (first perm)]
     [else
