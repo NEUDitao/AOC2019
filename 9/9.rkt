@@ -8,5 +8,5 @@
 (define INPUT (map string->number (first (read-csv-file "input.txt"))))
 
 
-(displayln (car (do-intcode-to-end `(,INPUT (1) 0 0))))
-(displayln (car (do-intcode-to-end `(,INPUT (2) 0 0))))
+(displayln (car (do-intcode-to-end `(,INPUT (1)))))
+(displayln (car (do-intcode-to-end `(,INPUT (2)))))
